@@ -1,0 +1,15 @@
+[package]
+name = "hermit"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1.0.66"
+proxy-wasm = "0.2.0"
+proxy-wasm-test-framework = { git = "https://github.com/proxy-wasm/test-framework", branch = "master" }
+structopt = "0.3.26"
