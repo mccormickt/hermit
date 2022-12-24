@@ -1,2 +1,2 @@
-FROM envoyproxy/envoy:1.24.0
+FROM envoyproxy/envoy:v1.24-latest
 ENTRYPOINT /usr/local/bin/envoy -c /etc/envoy.yaml -l debug --service-cluster proxy
