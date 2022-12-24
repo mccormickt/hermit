@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	cargo test
+	cargo +nightly test
 
 .PHONY: clean
 clean:
@@ -8,8 +8,12 @@ clean:
 
 .PHONY: build
 build:
-	cargo build --target wasm32-unknown-unknown
+	cargo +nightly build --target=wasm32-unknown-unknown
 
 .PHONY: release
 release:
-	cargo build --release --target wasm32-unknown-unknown
+	cargo +nightly build --release --target=wasm32-unknown-unknown
+
+.PHONY: run
+run: build
+	WASM_PATH="./target/wasm32-unknown-unknown/debug/hermit.wasm" docker compose up --build --remove-orphans | grep "\[wasm\]\|Starting"

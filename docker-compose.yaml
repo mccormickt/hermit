@@ -1,0 +1,35 @@
+version: '2'
+services:
+
+  proxy:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - ./envoy.yaml:/etc/envoy.yaml
+      - '${WASM_PATH:-./target/wasm32-unknown-unknown/release/hermit.wasm}:/etc/hermit.wasm'
+      #- ./hermit.wasm:/etc/hermit.wasm
+    networks:
+      - envoymesh
+    expose:
+      - "80"
+      - "8001"
+    ports:
+      - "18000:80"
+      - "18001:8001"
+
+  web_service:
+    image: hashicorp/http-echo
+    command:
+      - '-text="Wasm filter test"'
+    networks:
+      envoymesh:
+        aliases:
+          - web_service
+    expose:
+      - "5678"
+    ports:
+      - "18080:5678"
+
+networks:
+  envoymesh: {}

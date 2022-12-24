@@ -9,7 +9,5 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-anyhow = "1.0.66"
+log = "0.4.17"
 proxy-wasm = "0.2.0"
-proxy-wasm-test-framework = { git = "https://github.com/proxy-wasm/test-framework", branch = "master" }
-structopt = "0.3.26"
