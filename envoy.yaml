@@ -13,6 +13,17 @@ static_resources:
                 config:
                   name: "hermit"
                   root_id: "hermit"
+                  configuration:
+                    "@type": type.googleapis.com/google.protobuf.StringValue
+                    value: |
+                      { 
+                        "blocked_ips": 
+                          [
+                            "172.19.0.1", 
+                            "172.20.0.1", 
+                            "172.18.0.1"
+                          ] 
+                      }
                   vm_config:
                     runtime: envoy.wasm.runtime.v8
                     code:
