@@ -1,0 +1,19 @@
+[package]
+name = "hermit-webhook"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+kube = { version = "0.78.0", default-features = false, features = ["admission", "rustls-tls"] }
+actix-rt = "2.1.0"
+actix-web = { version = "3", features = ["rustls"] }
+k8s-openapi = { version = "0.17.0", features = ["v1_26"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.16"
+envy = "0.4.2"
+serde_json = "1.0.91"
+serde = "1.0.152"
+anyhow = "1.0.68"
+env_logger = "0.10.0"
