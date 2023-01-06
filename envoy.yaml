@@ -17,12 +17,15 @@ static_resources:
                     "@type": type.googleapis.com/google.protobuf.StringValue
                     value: |
                       { 
-                        "blocked_ips": 
-                          [
-                            "172.19.0.1", 
-                            "172.20.0.1", 
-                            "172.18.0.1"
-                          ] 
+                        "blocked_ips": [
+                          "172.18.0.1",
+                          "172.19.0.1", 
+                          "172.20.0.1" 
+                        ]
+                        "blocked_user_agents": [
+                          "Fake User Agent",
+                          "curl/7.81.0"
+                        ]
                       }
                   vm_config:
                     runtime: envoy.wasm.runtime.v8

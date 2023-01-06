@@ -12,6 +12,7 @@ struct Hermit {
     #[serde(skip)]
     context_id: u32,
     blocked_ips: Vec<String>,
+    blocked_user_agents: Vec<String>,
 }
 
 impl Hermit {
@@ -19,6 +20,7 @@ impl Hermit {
         return Self {
             context_id: context_id,
             blocked_ips: Vec::new(),
+            blocked_user_agents: Vec::new(),
         };
     }
 
@@ -36,13 +38,14 @@ impl Hermit {
     }
 }
 
-#[no_mangle]
-pub fn _start() {
-    proxy_wasm::set_log_level(LogLevel::Trace);
-    proxy_wasm::set_root_context(|context_id| -> Box<dyn RootContext> {
-        Box::new(Hermit::new(context_id))
-    });
-}
+proxy_wasm::main!({
+    {
+        proxy_wasm::set_log_level(LogLevel::Trace);
+        proxy_wasm::set_root_context(|context_id| -> Box<dyn RootContext> {
+            Box::new(Hermit::new(context_id))
+        });
+    }
+});
 
 impl Context for Hermit {}
 
@@ -55,7 +58,9 @@ impl RootContext for Hermit {
 
     fn on_configure(&mut self, _plugin_configuration_size: usize) -> bool {
         let data: Vec<u8> = self.get_plugin_configuration().unwrap();
-        self.blocked_ips = serde_json::from_slice::<Hermit>(&data).unwrap().blocked_ips;
+        let config = serde_json::from_slice::<Hermit>(&data).unwrap();
+        self.blocked_ips = config.blocked_ips;
+        self.blocked_user_agents = config.blocked_user_agents;
         true
     }
 
@@ -63,6 +68,15 @@ impl RootContext for Hermit {
         Some(Box::new(Hermit {
             context_id: context_id,
             blocked_ips: self.blocked_ips.clone(),
+            blocked_user_agents: Vec::default(),
+        }))
+    }
+
+    fn create_http_context(&self, context_id: u32) -> Option<Box<dyn HttpContext>> {
+        Some(Box::new(Hermit {
+            context_id: context_id,
+            blocked_ips: Vec::default(),
+            blocked_user_agents: self.blocked_user_agents.clone(),
         }))
     }
 
@@ -86,7 +100,21 @@ impl StreamContext for Hermit {
     }
 }
 
-impl HttpContext for Hermit {}
+impl HttpContext for Hermit {
+    fn on_http_request_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
+        let header = self
+            .get_http_request_header("User-Agent")
+            .unwrap_or_default();
+        info!("Recieved connection with User-Agent: {}", header);
+
+        // Check if User Agent is in the block list
+        if self.blocked_ips.contains(&header) {
+            info!("Rejected connection from blocked User-Agent: {}", header);
+            self.send_http_response(403, Vec::new(), None)
+        }
+        Action::Continue
+    }
+}
 
 #[cfg(test)]
 mod test {}

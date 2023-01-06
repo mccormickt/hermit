@@ -8,7 +8,6 @@ services:
     volumes:
       - ./envoy.yaml:/etc/envoy.yaml
       - '${WASM_PATH:-./target/wasm32-unknown-unknown/release/hermit.wasm}:/etc/hermit.wasm'
-      #- ./hermit.wasm:/etc/hermit.wasm
     networks:
       - envoymesh
     expose:
