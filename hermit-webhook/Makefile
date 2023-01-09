@@ -8,12 +8,12 @@ clean:
 
 .PHONY: build
 build:
-	cargo +nightly build 
+	cargo +nightly build
 
 .PHONY: release
 release:
-	cargo +nightly build --release 
+	cargo +nightly build --release
 
 .PHONY: run
-run: 
-	cargo +nightly run 
+run:
+	cargo +nightly run
