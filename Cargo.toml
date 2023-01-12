@@ -1,8 +1,5 @@
 [workspace]
-
 members = [
     "hermit-wasm",
     "hermit-webhook",
 ]
-
-[workspace.dependencies]

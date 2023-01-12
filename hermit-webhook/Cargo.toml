@@ -2,8 +2,11 @@
 name = "hermit-webhook"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "hermit-webhook"
+path = "src/main.rs"
 
 [dependencies]
 kube = { version = "0.78.0", default-features = false, features = ["admission", "client", "rustls-tls"] }
@@ -17,3 +20,5 @@ env_logger = "0.10.0"
 json-patch = "0.3.0"
 serde_yaml = "0.9.16"
 tokio = { version = "1.24.1", features = ["rt-multi-thread", "macros"] }
+envoy-control-plane = { version = "0.4.0", features = ["grpc"] }
+tonic = "0.8.3"
