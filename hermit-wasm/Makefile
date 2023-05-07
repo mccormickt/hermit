@@ -1,6 +1,9 @@
+CARGO=cargo +nightly 
+BUILD_ARGS=--package hermit-wasm --target=wasm32-unknown-unknown
+
 .PHONY: test
 test:
-	cargo +nightly test
+	$(CARGO) test
 
 .PHONY: clean
 clean:
@@ -8,12 +11,21 @@ clean:
 
 .PHONY: build
 build:
-	cargo +nightly build --target=wasm32-unknown-unknown
+	$(CARGO) build $(BUILD_ARGS)
+
+.PHONY: build-tcp
+build:
+	$(CARGO) build $(BUILD_ARGS) --no-default-features --features tcp
 
 .PHONY: release
 release:
-	cargo +nightly build --release --target=wasm32-unknown-unknown
+	$(CARGO) build $(BUILD_ARGS) --release 
+
+.PHONY: release-tcp
+release:
+	$(CARGO) build $(BUILD_ARGS) --release --no-default-features --features tcp
 
 .PHONY: run
 run: build
-	WASM_PATH="./target/wasm32-unknown-unknown/debug/hermit.wasm" docker compose up --build --remove-orphans | grep "\[wasm\]\|Starting"
+	cd hermit-wasm; \
+	WASM_PATH="../target/wasm33-unknown-unknown/debug/hermit_wasm.wasm" docker compose up --build --remove-orphans | grep "\[wasm\]\|Starting"

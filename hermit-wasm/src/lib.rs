@@ -1,26 +1,34 @@
 use std::str;
 use std::time::Duration;
 
+use log::debug;
 use log::info;
 use proxy_wasm::hostcalls;
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize)]
+struct Config {
+    blocked_ips: Option<Vec<String>>,
+    blocked_user_agents: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
 struct Hermit {
     #[serde(skip)]
     context_id: u32,
-    blocked_ips: Vec<String>,
-    blocked_user_agents: Vec<String>,
+    config: Config,
 }
 
 impl Hermit {
     fn new(context_id: u32) -> Self {
         return Self {
             context_id: context_id,
-            blocked_ips: Vec::new(),
-            blocked_user_agents: Vec::new(),
+            config: Config {
+                blocked_ips: Some(Vec::new()),
+                blocked_user_agents: Some(Vec::new()),
+            },
         };
     }
 
@@ -58,28 +66,39 @@ impl RootContext for Hermit {
 
     fn on_configure(&mut self, _plugin_configuration_size: usize) -> bool {
         let data: Vec<u8> = self.get_plugin_configuration().unwrap();
-        let config = serde_json::from_slice::<Hermit>(&data).unwrap();
-        self.blocked_ips = config.blocked_ips;
-        self.blocked_user_agents = config.blocked_user_agents;
-        true
+        match serde_json::from_slice::<Config>(&data) {
+            Ok(c) => {
+                self.config = c;
+                true
+            }
+            Err(e) => {
+                debug!("data: {:?}", &data);
+                info!("couldn't configure wasm plugin: {}", e);
+                false
+            }
+        }
     }
 
     fn create_stream_context(&self, context_id: u32) -> Option<Box<dyn StreamContext>> {
         Some(Box::new(Hermit {
             context_id: context_id,
-            blocked_ips: self.blocked_ips.clone(),
-            blocked_user_agents: Vec::default(),
+            config: self.config.clone(),
         }))
     }
 
     fn create_http_context(&self, context_id: u32) -> Option<Box<dyn HttpContext>> {
         Some(Box::new(Hermit {
             context_id: context_id,
-            blocked_ips: Vec::default(),
-            blocked_user_agents: self.blocked_user_agents.clone(),
+            config: self.config.clone(),
         }))
     }
 
+    #[cfg(feature = "http")]
+    fn get_type(&self) -> Option<ContextType> {
+        Some(ContextType::HttpContext)
+    }
+
+    #[cfg(feature = "tcp")]
     fn get_type(&self) -> Option<ContextType> {
         Some(ContextType::StreamContext)
     }
@@ -92,7 +111,8 @@ impl StreamContext for Hermit {
         info!("Recieved connection from: {}", addr);
 
         // Check if IP is in the block list
-        if self.blocked_ips.contains(&addr) {
+        let blocked_ips = self.config.clone().blocked_ips.unwrap();
+        if blocked_ips.contains(&addr) {
             info!("Rejected connection from blocked IP: {}", addr);
             self.close_downstream();
         }
@@ -108,7 +128,8 @@ impl HttpContext for Hermit {
         info!("Recieved connection with User-Agent: {}", header);
 
         // Check if User Agent is in the block list
-        if self.blocked_ips.contains(&header) {
+        let blocked_user_agents = self.config.clone().blocked_user_agents.unwrap();
+        if blocked_user_agents.contains(&header) {
             info!("Rejected connection from blocked User-Agent: {}", header);
             self.send_http_response(403, Vec::new(), None)
         }

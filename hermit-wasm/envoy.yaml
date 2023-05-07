@@ -4,8 +4,61 @@ static_resources:
       address:
         socket_address:
           address: 0.0.0.0
-          port_value: 80
+          port_value: 10000
+      listener_filters:
+        - name: envoy.filters.listener.http_inspector
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
       filter_chains:
+        - filter_chain_match:
+            application_protocols:
+              - http/1.1
+              - http2
+          filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: AUTO
+                route_config:
+                  name: local_routes
+                  virtual_hosts:
+                    - name: local_service
+                      domains:
+                        - "*"
+                      routes:
+                        - match:
+                            prefix: "/"
+                          direct_response:
+                            status: 200
+                            body:
+                              inline_string: "Inspect the HTTP header: custom-header.\n"
+                http_filters:
+                  - name: envoy.filters.http.wasm
+                    typed_config:
+                      "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+                      type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+                      value:
+                        config:
+                          name: "hermit"
+                          root_id: "hermit"
+                          configuration:
+                            "@type": "type.googleapis.com/google.protobuf.StringValue"
+                            value: |
+                              {
+                                "blocked_user_agents": [
+                                  "Fake User Agent",
+                                  "curl/7.81.0"
+                                ]
+                              }
+                          vm_config:
+                            runtime: envoy.wasm.runtime.v8
+                            code:
+                              local:
+                                filename: "/etc/hermit-http.wasm"
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
         - filters:
             - name: envoy.filters.network.wasm
               typed_config:
@@ -16,24 +69,21 @@ static_resources:
                   configuration:
                     "@type": type.googleapis.com/google.protobuf.StringValue
                     value: |
-                      { 
+                      {
                         "blocked_ips": [
                           "172.18.0.1",
-                          "172.19.0.1", 
-                          "172.20.0.1" 
-                        ]
-                        "blocked_user_agents": [
-                          "Fake User Agent",
-                          "curl/7.81.0"
+                          "172.19.0.1",
+                          "172.20.0.1",
+                          "127.0.0.1"
                         ]
                       }
                   vm_config:
                     runtime: envoy.wasm.runtime.v8
                     code:
                       local:
-                        filename: "/etc/hermit.wasm"
+                        filename: "/etc/hermit-tcp.wasm"
                     allow_precompiled: true
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                 stat_prefix: ingress_tcp
@@ -50,8 +100,8 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: web_service
-                      port_value: 5678
+                      address: 127.0.0.1
+                      port_value: 18080
 admin:
   access_log_path: "/dev/null"
   address:
