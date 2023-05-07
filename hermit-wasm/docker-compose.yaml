@@ -7,16 +7,15 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./envoy.yaml:/etc/envoy.yaml
-      - '${WASM_PATH:-./target/wasm32-unknown-unknown/release/hermit.wasm}:/etc/hermit.wasm'
-      #- ./hermit.wasm:/etc/hermit.wasm
+      - '${WASM_PATH:-../target/wasm32-unknown-unknown/debug/hermit_wasm.wasm}:/etc/hermit.wasm'
     networks:
       - envoymesh
     expose:
-      - "80"
       - "8001"
+      - "10000"
     ports:
-      - "18000:80"
       - "18001:8001"
+      - "10000:10000"
 
   web_service:
     image: hashicorp/http-echo
